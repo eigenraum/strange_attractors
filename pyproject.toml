@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel", "numpy", "matplotlib"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "strange_attractors"
+version = "0.1.0"
+description = "Strange attractors demo"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+# Lint everything under the repo root
+target-version = "py313"
+line-length = 100
+extend-exclude = [
+  ".venv", ".git", "__pycache__", "build", "dist"
+]
+
+[tool.ruff.lint]
+# Rule sets: E,F (pycodestyle/pyflakes), I (isort), UP (pyupgrade), B (bugbear), etc.
+select = ["E", "F", "I", "UP", "B", "SIM", "PL", "RUF"]
+# Ignore examples (tweak to taste)
+extend-ignore = ["E203", "E266"]
+
+[tool.ruff.lint.per-file-ignores]
+# Allow unused imports in package exports; looser rules in tests
+"src/**/__init__.py" = ["F401"]
+"tests/**" = ["S101"]  # e.g., allow asserts if you enable flake8-bandit later

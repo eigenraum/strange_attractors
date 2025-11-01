@@ -1,10 +1,7 @@
 # Strange Attractors
 This Repo contains demo code for visualizing strange attractors.
 
-Demo Video:
-<video width="640" height="360" controls>
-  <source src="demo.mp4" type="video/mp4">
-</video>
+Click [here](demo.mp4) for a demo video of the Thomas Attractor.
 
 pyenv activate general
 

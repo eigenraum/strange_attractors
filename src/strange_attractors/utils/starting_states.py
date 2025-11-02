@@ -4,7 +4,9 @@ from collections.abc import Sequence
 
 import numpy as np
 
+from strange_attractors.attractors.aizawa import AizawaAttractor
 from strange_attractors.attractors.lorenz import LorenzAttractor
+from strange_attractors.attractors.rossler import RosslerAttractor
 from strange_attractors.attractors.thomas import ThomasAttractor
 
 
@@ -34,9 +36,19 @@ class BoxStartingStates(StartingStates):
 
 # Appropriate states for Lorenz attractor
 lorenz_box = BoxStartingStates([-10, -10, 10], [10, 10, 20])
-randn_scaled = lambda *args, **kwargs: np.random.randn(*args, **kwargs) * 3.0
-thomas_random = RandomStartingStates(3, randfunction=randn_scaled)
+def _scaled_normal(scale: float):
+    def _generator(*args, **kwargs):
+        return np.random.randn(*args, **kwargs) * scale
+
+    return _generator
+
+
+thomas_random = RandomStartingStates(3, randfunction=_scaled_normal(3.0))
+rossler_box = BoxStartingStates([-10, -10, 0], [10, 10, 20])
+aizawa_random = RandomStartingStates(3, randfunction=_scaled_normal(0.5))
 
 recommended_starting_states = defaultdict(lambda: thomas_random)
 recommended_starting_states[type(LorenzAttractor)] = lorenz_box
+recommended_starting_states[type(RosslerAttractor)] = rossler_box
+recommended_starting_states[type(AizawaAttractor)] = aizawa_random
 recommended_starting_states[type(ThomasAttractor)] = thomas_random

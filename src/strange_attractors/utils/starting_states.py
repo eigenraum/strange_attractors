@@ -34,7 +34,7 @@ class BoxStartingStates(StartingStates):
 
 # Appropriate states for Lorenz attractor
 lorenz_box = BoxStartingStates([-10, -10, 10], [10, 10, 20])
-randn_scaled = lambda *args, **kwargs: np.random.randn(*args, **kwargs) * 10.0
+randn_scaled = lambda *args, **kwargs: np.random.randn(*args, **kwargs) * 3.0
 thomas_random = RandomStartingStates(3, randfunction=randn_scaled)
 
 recommended_starting_states = defaultdict(lambda: thomas_random)

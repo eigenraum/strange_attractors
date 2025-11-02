@@ -48,7 +48,6 @@ class AttractorConfig:
 
     def run(self):
         if self.sim_settings.fast_start:
-            print("run")
             self._pre_run()
         trajectories = self.solver.solve(
             self.starting_state, n_steps=self.sim_settings.n_steps, dt=self.sim_settings.dt

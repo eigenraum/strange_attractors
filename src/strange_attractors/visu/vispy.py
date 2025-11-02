@@ -17,9 +17,11 @@ class VispyVisualizer3D(Visualizer):
         *,
         use_color: bool = True,  # ignored (no coloring)
         fps: int = 60,
-        trail_steps: int = 100,  # 0 => only current positions; >0 => short trails
+        trail_steps: int = 50000,  # 0 => only current positions; >0 => short trails
         point_size: float = 1.5,
         background: str = "black",
+        output: str | None = None,  # Give it a filename.mp4 to record video.
+        frame_steps: int = 10,
     ):
         self.trajectory = np.asarray(trajectory, dtype=np.float32)
         if self.trajectory.ndim != 3 or self.trajectory.shape[2] != 3:
@@ -29,11 +31,20 @@ class VispyVisualizer3D(Visualizer):
         self.point_size = float(point_size)
         self.background = background
         self.cmap = get_cmap("Reds")
+        self.output = output
+        self.frame_steps = frame_steps
 
         if use_color:
             N = self.trajectory.shape[0]
             rng = np.random.default_rng(0)
             self.colors = np.c_[rng.random((N, 3)), np.ones(N, dtype=np.float32)].astype(np.float32)
+            velocity = self.trajectory[:, :-1, :] - self.trajectory[:, 1:, :]
+            speed = np.linalg.norm(velocity, axis=-1)
+            self.speed_min = np.min(speed)
+            self.speed_max = np.max(speed)
+            speed_norm = (speed - self.speed_min) / (self.speed_max - self.speed_min + 1e-12)
+            speed_norm = np.concatenate((speed_norm[:, 0:1], speed_norm), axis=1)
+            self.color = self.cmap(speed_norm)
         else:
             self.colors = "white"
 
@@ -42,8 +53,7 @@ class VispyVisualizer3D(Visualizer):
         *,
         size=(904, 704),
         show=True,
-        record_to: str | None = "out.mp4",
-        # If record_to is given, choose one of these:
+        # If self.output is not None, choose one of these:
         loops: int = 1,  # how many times to cycle through the trajectory
         limit_frames: int | None = None,  # or record a fixed #frames
         codec: str = "libx264",
@@ -57,7 +67,6 @@ class VispyVisualizer3D(Visualizer):
         Args:
             size: output canvas size in (W,H) pixels (also the video resolution).
             show: True to show a window; False for headless (needs appropriate backend/driver).
-            record_to: path like 'out.mp4' to enable recording.
             loops: how many full cycles of the trajectory to record (used if limit_frames is None).
             limit_frames: record exactly this many frames (overrides loops if provided).
             codec, quality, pixelformat: ffmpeg writer options.
@@ -91,6 +100,7 @@ class VispyVisualizer3D(Visualizer):
         frames_target = None
         frames_written = 0
 
+        record_to = self.output
         if record_to is not None:
             # If limit_frames not provided, compute from loops
             frames_target = limit_frames if limit_frames is not None else int(loops * T)
@@ -109,15 +119,16 @@ class VispyVisualizer3D(Visualizer):
             # Color by per-particle speed (between frames i-1 and i)
             speed = self.trajectory[:, i - 1, :] - self.trajectory[:, i, :]
             speed_mag = np.linalg.norm(speed, axis=1).astype(np.float32)
-            w = (speed_mag - speed_mag.min()) / (np.ptp(speed_mag) + 1e-12)
+            w = (speed_mag - self.speed_min) / (self.speed_max - self.speed_min + 1e-12)
             colors_now = self.cmap(w)  # RGBA in [0,1]
 
             if self.trail_steps > 0:
                 a = max(0, i - self.trail_steps + 1)
                 seg = self.trajectory[:, a : i + 1, :].reshape(-1, 3)  # (n_particles * trail, 3)
                 k = i - a + 1
-                colors_rep = np.repeat(colors_now, k, axis=0)
-                fade = np.logspace(-2.0, 0, k, dtype=np.float32)  # oldest → newest
+                # colors_rep = np.repeat(colors_now, k, axis=0)
+                colors_rep = self.color[:, a : i + 1, :].reshape(-1, 4).copy()
+                fade = np.logspace(-1.5, 0, k, dtype=np.float32)  # oldest → newest
                 wfade = np.tile(fade, self.trajectory.shape[0])
                 colors_rep[:, 3] *= wfade  # fade via alpha
 
@@ -162,7 +173,7 @@ class VispyVisualizer3D(Visualizer):
             if not state["play"]:
                 return
             # advance to next frame
-            state["frame"] = (state["frame"] + 1) % T
+            state["frame"] = (state["frame"] + self.frame_steps) % T
             render_frame(state["frame"])
             # capture after drawing the new frame
             if capture_and_maybe_stop():
@@ -190,6 +201,10 @@ class VispyVisualizer3D(Visualizer):
                 render_frame(state["frame"])
                 capture_and_maybe_stop()
                 canvas.update()
+            elif event.key == "Up":
+                self.frame_steps += 1
+            elif event.key == "Down":
+                self.frame_steps -= 1
             elif event.key == "M":
                 state["move"] = not state["move"]
 

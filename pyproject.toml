@@ -1,13 +1,25 @@
 [build-system]
-requires = ["setuptools>=68", "wheel", "numpy", "matplotlib"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "strange_attractors"
 version = "0.1.0"
 description = "Strange attractors demo"
-readme = "README.md"
+readme = "readme.md"
 requires-python = ">=3.10"
+dependencies = [
+    "imageio",
+    "matplotlib",
+    "numpy",
+    "vispy",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

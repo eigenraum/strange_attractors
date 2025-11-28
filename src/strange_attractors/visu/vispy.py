@@ -7,23 +7,26 @@ import numpy as np
 from matplotlib.cm import get_cmap
 from vispy import app, scene
 
+from strange_attractors.solvers.solver import RingBufferedSolver
 from strange_attractors.visu.visu import Visualizer
 
 
 class VispyVisualizer3D(Visualizer):
     def __init__(
         self,
-        trajectory: np.ndarray,  # (n_particles, n_steps, 3)
+        recurrent_solver: RingBufferedSolver,
         *,
         use_color: bool = True,  # ignored (no coloring)
         fps: int = 60,
-        trail_steps: int = 50000,  # 0 => only current positions; >0 => short trails
+        trail_steps: int = 10000,  # 0 => only current positions; >0 => short trails
         point_size: float = 1.5,
         background: str = "black",
         output: str | None = None,  # Give it a filename.mp4 to record video.
         frame_steps: int = 10,
     ):
-        self.trajectory = np.asarray(trajectory, dtype=np.float32)
+        self.recurrent_solver = recurrent_solver
+        self.trajectory = recurrent_solver.get()
+        # self.trajectory = np.asarray(trajectory, dtype=np.float32)
         if self.trajectory.ndim != 3 or self.trajectory.shape[2] != 3:
             raise ValueError("trajectory must have shape (n_particles, n_steps, 3)")
         self.fps = int(fps)
@@ -182,6 +185,8 @@ class VispyVisualizer3D(Visualizer):
             if state["move"]:
                 view.camera.elevation += 0.1
             canvas.update()
+            # Possibly compute next part of trajectory here
+            self.trajectory = self.recurrent_solver.update(self.frame_steps)
 
         # Timer at target FPS
         timer = app.Timer(interval=1.0 / max(self.fps, 1), connect=on_timer, start=True)

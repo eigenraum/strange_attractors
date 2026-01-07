@@ -7,8 +7,7 @@ class NewtonSolver(Solver):
     def solve(self, state: np.ndarray, n_steps: int, dt: float) -> np.ndarray:
         states = [state.copy()]
         for _ in range(n_steps - 1):
-            state = states[-1]
-            delta_state = self._attractor.vector_field(state)
-            state += delta_state * dt
-            states.append(state.copy())
+            prev = states[-1]
+            delta_state = self._attractor.vector_field(prev)
+            states.append(prev + delta_state * dt)
         return np.stack(states, axis=1)

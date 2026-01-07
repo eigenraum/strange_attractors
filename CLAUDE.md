@@ -9,6 +9,9 @@ Demo code for visualizing strange attractors - a scientific visualization projec
 ## Commands
 
 ```bash
+# Activate environment first
+pyenv activate general
+
 # Install in development mode
 pip install -e .
 

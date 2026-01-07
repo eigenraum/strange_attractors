@@ -43,6 +43,10 @@ class VispyVisualizer3D(Visualizer):
         self.cmap = get_cmap(cmap)
         self.output = output
 
+        # Track all-time speed range (only expands, never shrinks)
+        self.speed_min = float("inf")
+        self.speed_max = float("-inf")
+
     def _compute_colors(self, trajectory: np.ndarray) -> np.ndarray:
         """Compute colors based on velocity magnitude with fading trail effect.
 
@@ -61,18 +65,23 @@ class VispyVisualizer3D(Visualizer):
         # Pad to match trajectory length (repeat first speed)
         speed = np.concatenate([speed[:, :1], speed], axis=1)  # (n_particles, n_steps)
 
-        # Normalize speed for colormap
-        speed_min, speed_max = speed.min(), speed.max()
-        speed_norm = (speed - speed_min) / (speed_max - speed_min + 1e-12)
+        # Update all-time speed range (only expands)
+        self.speed_min = min(self.speed_min, speed.min())
+        self.speed_max = max(self.speed_max, speed.max())
 
-        # Apply colormap
-        colors = self.cmap(speed_norm)  # (n_particles, n_steps, 4)
+        # Normalize speed for colormap using stable all-time range
+        speed_norm = (speed - self.speed_min) / (self.speed_max - self.speed_min + 1e-12)
 
-        # Apply fading trail: exponential decay from 1% (oldest) to 100% (newest)
+        # Apply colormap (returns RGBA with A=1.0)
+        colors = np.array(self.cmap(speed_norm), dtype=np.float32)  # (n_particles, n_steps, 4)
+
+        # Apply fading trail: exponential decay from 0.1% (oldest) to 100% (newest)
+        # Index 0 = oldest point = 0.001 opacity
+        # Index -1 = newest point = 1.0 opacity
         fade = np.logspace(-3, 0, n_steps, dtype=np.float32)
-        colors[:, :, 3] *= fade
+        colors[:, :, 3] = fade  # Set alpha directly (not multiply)
 
-        return colors.reshape(-1, 4).astype(np.float32)
+        return colors.reshape(-1, 4)
 
     def visualize(
         self,
@@ -104,7 +113,6 @@ class VispyVisualizer3D(Visualizer):
 
         # Initialize scatter plot
         scatter = scene.visuals.Markers(parent=view.scene)
-        scatter.set_gl_state(blend=True, depth_test=False)
 
         # Set camera range based on initial trajectory
         points = trajectory.reshape(-1, 3)
@@ -132,6 +140,7 @@ class VispyVisualizer3D(Visualizer):
             points = traj.reshape(-1, 3)
 
             scatter.set_data(points, face_color=colors, size=self.point_size, edge_width=0)
+            scatter.set_gl_state(blend=True, depth_test=False, depth_mask=False)
 
         def on_timer(_):
             if state["paused"]:

@@ -44,14 +44,16 @@ class AttractorConfig:
             starting_state = recommended_starting_states[type(self.attractor)].generate(
                 self.sim_settings.num_particles
             )
+
+        # Run warm-up period to let transients settle before visualization
+        if sim_settings.fast_start:
+            starting_state = self.solver.solve(starting_state, n_steps=10000, dt=sim_settings.dt)[
+                :, -1
+            ]
+
         self.starting_state = starting_state
         recurrent_solver = RecurrentSolver(self.solver, starting_state, sim_settings.dt)
         self.buffered_solver = RingBufferedSolver(recurrent_solver, size_rb=10000)
 
     def run(self):
-        if self.sim_settings.fast_start:
-            self._pre_run()
         self.visualizer_cls(self.buffered_solver).visualize()
-
-    def _pre_run(self):
-        self.starting_state = self.solver.solve(self.starting_state, n_steps=10000, dt=0.01)[:, -1]

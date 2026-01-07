@@ -32,9 +32,11 @@ class RecurrentSolver:
         return self._state
 
     def next(self, n_steps: int):
-        result = self._solver.solve(self._state, n_steps, self._dt)
+        # Request one extra step since solve() includes the starting state
+        result = self._solver.solve(self._state, n_steps + 1, self._dt)
         self._state = result[:, -1]
-        return result
+        # Exclude the first point (starting state) to avoid duplicates between calls
+        return result[:, 1:]
 
 
 class RingBufferedSolver:
@@ -51,8 +53,8 @@ class RingBufferedSolver:
         pre-fill the ring buffer.
         """
         self.rec_solver = rec_solver
-        shape = (1, size_rb, 3)  # hard code for the moment
-        self._rb = TrajectoryBuffer(tuple(shape))
+        n_particles, n_dim = rec_solver.state.shape
+        self._rb = TrajectoryBuffer((n_particles, size_rb, n_dim))
         self.size_rb = size_rb
         if fill:
             self.update(size_rb)

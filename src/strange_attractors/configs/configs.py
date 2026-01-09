@@ -9,7 +9,7 @@ lorenz = AttractorConfig(
     attractor=LorenzAttractor(),
     visualizer=VispyVisualizer3D,
     sim_settings=SimSettings(
-        dt=0.001, fast_start=True, num_particles=1, n_steps=50000, ring_buffer_size=10000
+        dt=0.001, fast_start=True, num_particles=1, n_steps=50000, ring_buffer_size=100000, n_flow=10
     ),
 )
 

@@ -16,6 +16,7 @@ class SimSettings:
     fast_start: bool = False
     n_steps: int = 10000
     ring_buffer_size: int = 10000
+    n_flow: int = 10  # Number of frames in flow cycle for visualization
 
 
 class AttractorConfig:
@@ -57,4 +58,9 @@ class AttractorConfig:
         self.buffered_solver = RingBufferedSolver(recurrent_solver, size_rb=sim_settings.ring_buffer_size)
 
     def run(self):
-        self.visualizer_cls(self.buffered_solver).visualize()
+        # Pass n_flow to the visualizer if it's VispyVisualizer3D
+        from strange_attractors.visu.vispy import VispyVisualizer3D
+        if self.visualizer_cls == VispyVisualizer3D:
+            self.visualizer_cls(self.buffered_solver, n_flow=self.sim_settings.n_flow).visualize()
+        else:
+            self.visualizer_cls(self.buffered_solver).visualize()

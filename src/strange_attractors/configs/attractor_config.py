@@ -15,6 +15,7 @@ class SimSettings:
     num_particles: int = 1000
     fast_start: bool = False
     n_steps: int = 10000
+    ring_buffer_size: int = 10000
 
 
 class AttractorConfig:
@@ -53,7 +54,7 @@ class AttractorConfig:
 
         self.starting_state = starting_state
         recurrent_solver = RecurrentSolver(self.solver, starting_state, sim_settings.dt)
-        self.buffered_solver = RingBufferedSolver(recurrent_solver, size_rb=10000)
+        self.buffered_solver = RingBufferedSolver(recurrent_solver, size_rb=sim_settings.ring_buffer_size)
 
     def run(self):
         self.visualizer_cls(self.buffered_solver).visualize()
